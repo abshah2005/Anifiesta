@@ -1,11 +1,113 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.11.4/ScrollTrigger.min.js"></script>
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+  </style>
 </head>
 <body>
-    
+  <div class="w-full bg-zinc-900">
+    <!-- Container with a sticky canvas for full-screen display -->
+    <div class="parent cnav w-full top-0 left-0 relative h-[700vh] bg-zinc-900">
+      <div class="w-full sticky h-screen top-0 left-0">
+        <canvas id="frame" class="w-full h-screen"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="w-full h-screen bg-black"></div>
+
+  <script>
+    // Object to track the current image index and maximum index
+    const frames = {
+      currentIndex: 0,
+      maxIndex: 382,
+    };
+
+    const images = [];
+    const canvas = document.querySelector("canvas");
+    const context = canvas.getContext("2d");
+
+    function preloadImages() {
+      for (let i = 1; i <= frames.maxIndex; i++) {
+        const imageUrl = `./frames/frame_${i.toString().padStart(5, "0")}.jpg`;
+        const img = new Image();
+        img.src = imageUrl;
+        img.onload = () => {
+          images.push(img);
+          // Check if all images have been loaded
+          if (images.length === frames.maxIndex) {
+            loadImage(frames.currentIndex); // Load the initial image
+            startAnimation(); // Start the GSAP animation
+          }
+        };
+      }
+    }
+
+    function loadImage(index) {
+  if (index >= 0 && index < images.length) {
+    const img = images[index];
+    if (canvas.width !== window.innerWidth || canvas.height !== window.innerHeight) {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    const scaleX = canvas.width / img.width;
+    const scaleY = canvas.height / img.height;
+    const scale = Math.max(scaleX, scaleY);
+
+    const newWidth = img.width * scale;
+    const newHeight = img.height * scale;
+
+    const offsetX = (canvas.width - newWidth) / 2;
+    const offsetY = (canvas.height - newHeight) / 2;
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = "high";
+    context.drawImage(img, offsetX, offsetY, newWidth, newHeight);
+    frames.currentIndex = index;
+  }
+}
+
+
+    function startAnimation() {
+      gsap.registerPlugin(ScrollTrigger);
+
+      var tl = gsap.timeline({
+        scrollTrigger: {
+          trigger: ".parent",
+          start: "top top",
+          end: "bottom bottom",
+          scrub: true,
+        }
+      });
+
+      tl.to(frames, {
+        currentIndex: frames.maxIndex,
+        onUpdate: function () {
+          loadImage(Math.floor(frames.currentIndex)); // Load the image corresponding to the current index
+        }
+      });
+    }
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      loadImage(frames.currentIndex); // Reload the current image to fit new canvas size
+    }
+
+    preloadImages(); // Start preloading images
+    resizeCanvas(); // Initial resize to set canvas size
+    window.addEventListener('resize', resizeCanvas); // Update canvas size on window resize
+  </script>
 </body>
 </html>
